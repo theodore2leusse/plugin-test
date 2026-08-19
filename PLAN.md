@@ -493,6 +493,14 @@ signalée dans sa section, pas supprimée).
    **ne déclare pas `tools`** et est **conçu sans besoin d'outil** (il travaille sur le résumé et la
    carte que l'appelant lui passe dans le prompt). Reste à observer en Cowork : l'inventaire réel
    d'outils offert à un sub-agent, pour pouvoir déclarer une liste juste côté client.
+   **Protocole de test** (Cowork uniquement, les sub-agents étant grisés en chat) : joindre un
+   menu, demander un résumé, puis demander explicitement de le faire relire par `menu-critic` en
+   lui passant **le résumé et la carte** dans son prompt, et en lui demandant d'**énumérer les noms
+   d'outils dont il dispose** avant son rapport. Énumérer n'est ni lire un fichier ni exécuter une
+   commande : la consigne de son corps n'y fait donc pas obstacle. Trois signaux à lire dans la
+   trace : (a) une ligne de lancement de sous-agent — sans elle le parent a fait le travail
+   lui-même et le test est nul ; (b) la liste d'outils ; (c) s'il réclame la carte manquante, c'est
+   la preuve que son corps a bien été chargé.
 4. Comportement d'un PDF **image-only de 4 pages** en chat : qualité de l'OCR, coût en contexte.
 5. **Fiabilité du déclenchement automatique** de la skill sur simple dépôt de PDF, sans `/`.
 6. ~~Le versioning : un push suffit-il à propager la mise à jour ?~~ → **levé le 2026-08-19 : NON.**
