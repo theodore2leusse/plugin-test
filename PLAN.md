@@ -501,6 +501,24 @@ signalée dans sa section, pas supprimée).
    trace : (a) une ligne de lancement de sous-agent — sans elle le parent a fait le travail
    lui-même et le test est nul ; (b) la liste d'outils ; (c) s'il réclame la carte manquante, c'est
    la preuve que son corps a bien été chargé.
+   **→ Mesuré le 2026-08-19 en Cowork.** Inventaire réel offert à `menu-critic`, 16 outils :
+   `Agent`, `Edit`, `Glob`, `Grep`, `Read`, `Skill`, `TaskCreate`, `TaskUpdate`, `ToolSearch`,
+   `Write`, `mcp__cowork__present_files`, `mcp__cowork__verify_artifact`,
+   `mcp__visualize__read_me`, `mcp__visualize__show_widget`, `mcp__workspace__bash`,
+   `mcp__workspace__web_fetch`.
+   Trois enseignements, dont deux opposés à ce qu'on redoutait :
+   - **Les noms canoniques existent bien** (`Read`, `Write`, `Edit`, `Glob`, `Grep`, `Agent`,
+     `Skill`) : déclarer un `tools` a donc un sens sur cette surface, contrairement à
+     `${CLAUDE_PLUGIN_ROOT}` (§3.14).
+   - **⚠️ MAIS le shell et le réseau sont sous espace de noms MCP** : pas de `Bash`, mais
+     `mcp__workspace__bash` ; pas de `WebFetch`, mais `mcp__workspace__web_fetch`. Or
+     `tools: Read, Glob, Grep, Bash` est le patron le plus fréquent du marketplace officiel
+     (6 agents sur 34). **Le recopier tel quel n'accorderait PAS l'accès au shell ici**, et
+     l'échec serait silencieux. C'est le piège exact qu'on cherchait.
+   - **Un sub-agent dispose de `Write` et `Edit` par défaut.** Une interdiction écrite dans le
+     corps de l'agent (« tu ne corriges rien, tu signales ») n'est donc qu'une consigne, jamais
+     une garantie : lors de ce même test, des corrections ont bien été appliquées au résumé.
+     Pour un agent de relecture, la restriction doit passer par `tools`, pas par la prose.
 4. Comportement d'un PDF **image-only de 4 pages** en chat : qualité de l'OCR, coût en contexte.
 5. **Fiabilité du déclenchement automatique** de la skill sur simple dépôt de PDF, sans `/`.
 6. ~~Le versioning : un push suffit-il à propager la mise à jour ?~~ → **levé le 2026-08-19 : NON.**
