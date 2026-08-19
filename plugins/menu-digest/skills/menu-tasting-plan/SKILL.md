@@ -1,6 +1,6 @@
 ---
 name: menu-tasting-plan
-description: Compose un menu dégustation en trois services à partir de la carte d'un restaurant — un accord de saveurs justifié plus une fourchette de budget par personne calculée sur les prix affichés. À utiliser quand l'utilisateur a fourni une carte ou un menu (PDF, photo, capture ou texte) et demande une sélection, une suggestion, un choix de plats, un accord ou un menu dégustation. À ne pas utiliser s'il demande un résumé, une synthèse ou une présentation de la carte : c'est la skill menu-summary qui s'en charge.
+description: Compose un menu dégustation en trois services à partir de la carte d'un restaurant — un accord de saveurs justifié plus une fourchette de budget par personne calculée sur les prix affichés. À utiliser quand l'utilisateur a fourni une carte ou un menu (PDF, photo, capture ou texte) et demande une sélection, une suggestion, un choix de plats, un accord ou un menu dégustation. À ne pas utiliser s'il demande un résumé, une synthèse ou une présentation de la carte, qui relève de la skill menu-summary.
 ---
 
 # Menu dégustation en trois services
