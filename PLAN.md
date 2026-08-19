@@ -586,3 +586,146 @@ déploiement**.
 - Aucune dépendance à installer, ni dans le repo ni sur la machine.
 - Aucun contenu tiers commité (les PDF restent gitignorés).
 - Aucune adresse e-mail dans les fichiers du dépôt public.
+
+---
+
+## 11. Transposition client
+
+Rédigé le 2026-08-19, à l'issue des phases 1 et 2. Tout ce qui suit est **mesuré sur ce
+prototype**, sauf le §11.4 dont le statut de vérification est indiqué explicitement.
+
+> **Le §9 est la référence sur la gouvernance du déploiement** (le client est sur Claude **Team**).
+> La présente section ne traite que de la mise en œuvre technique et ne le contredit jamais : en cas
+> de divergence, le §9 prévaut.
+
+### 11.1 Ce qui a marché du premier coup
+
+Aucune reprise n'a été nécessaire sur ces points, ce qui permet de les **chiffrer sans marge** dans
+une estimation client :
+
+- **La structure du bundle.** `marketplace.json` + `plugin.json`, chemins de découverte par défaut,
+  aucun champ `skills`/`agents`/`hooks` déclaré : `claude plugin validate` passe du premier coup, et
+  les deux skills, l'agent et le hook sont découverts sans réglage.
+- **Le déclenchement des skills**, y compris sur formulation libre (« fais moi un accord entrée plat
+  dessert ») et **sans déclenchement croisé** entre deux skills proches.
+- **La divulgation progressive.** Mesurée : ~150 à 210 tokens de frontmatter toujours chargés,
+  1,3k à 2,1k au déclenchement, et `references/pairing-rules.md` lu **uniquement** au moment de
+  composer un accord. Le mécanisme fonctionne exactement comme annoncé.
+- **Le frontmatter d'un sub-agent** (`name`, `description`, `model`, `color`) et son invocation
+  depuis Cowork, où il a appliqué sa grille de dix contrôles et relevé cinq écarts.
+- **Un script en bibliothèque standard** : dix cas d'entrée testés, aucune trace d'exception.
+
+### 11.2 Ce qui a résisté
+
+| Symptôme observé | Cause réelle | Correctif | Corrigé en |
+|---|---|---|---|
+| Skill absente côté claude.ai après un push | Installation **épinglée** à la version d'installation | `marketplace update` → `plugin update <p>@<m>` → redémarrage | §8.6 |
+| `Plugin not found` sur une mise à jour | Suffixe `@marketplace` manquant | Toujours qualifier le nom | §8.6 |
+| Inventaire correct alors que l'install est périmée | `claude plugin details` lit la **source** | Ne conclure que depuis la surface consommatrice | §8.6 |
+| Script introuvable, `find /` sur tout le disque | `${CLAUDE_PLUGIN_ROOT}` absent du shell d'une skill | Commande unique auto-résolvante | 0.2.3, §3.14 |
+| Deux commandes au lieu d'une pour un appel de script | Instruction rédigée en deux blocs bash séparés | Fusionner en une seule commande | 0.2.3 |
+| Hook impossible à observer | Sortie d'un hook = harness-only | Effet de bord fichier, jamais un `echo` | §8.2 |
+| Consigne « ne corrige rien » non respectée | Un sub-agent reçoit `Write`/`Edit` par défaut | Restreindre via `tools`, pas par la prose | 0.3.1 |
+| PDF de fixture non générable | `cupsfilter` n'a **pas** de filtre HTML → PDF | Passer par `text/plain` et `cgtexttopdf` | §3 |
+| Skill silencieusement introuvable | Un `: ` dans une valeur de frontmatter invalide le YAML | Reformuler sans deux-points | 0.2.1 |
+
+Deux méta-enseignements en découlent, et ce sont eux qu'il faut porter chez le client :
+
+1. **Les défaillances de cette technologie sont silencieuses.** Chemin erroné, YAML invalide,
+   version périmée, nom d'outil inexistant : aucun de ces cas ne produit d'erreur. `validate` ne
+   les voit pas. Il faut donc budgéter du **temps d'observation sur la surface réelle**, et non
+   supposer qu'un validateur vert signifie que le plugin fonctionne.
+2. **La documentation officielle ne couvre pas les surfaces chat et Cowork.** Le mot « Cowork »
+   n'apparaît qu'une fois dans tout le marketplace officiel. Les exemples visent Claude Code, et
+   trois d'entre eux ne transposent pas : `${CLAUDE_PLUGIN_ROOT}`, le nom `Bash`, et l'observabilité
+   d'un hook.
+
+### 11.3 La formulation de `description` qui déclenche le plus fiablement
+
+C'est le seul levier de déclenchement : si une skill ne part pas, **le correctif est la
+`description`, jamais le corps**. Le patron qui a fonctionné, en quatre éléments :
+
+1. **Ce que fait** la skill, en une proposition concrète.
+2. **Quand l'utiliser**, en énumérant les **modalités d'entrée** (« PDF, photo, capture d'écran ou
+   texte ») — l'utilisateur ne dit jamais « PDF », il dépose un fichier.
+3. **Les synonymes de la demande** telle qu'un humain la formule : « un résumé, une synthèse, une
+   présentation ou une explication » ; « une sélection, une suggestion, un choix de plats, un
+   accord ».
+4. **Une clause d'exclusion nommant la skill voisine**, dès que deux skills se ressemblent. Celle
+   de `menu-tasting-plan` renvoie explicitement à `menu-summary`. Résultat : aucun déclenchement
+   croisé observé, alors que c'était le risque principal identifié en cadrage.
+
+Contraintes à respecter : ≤ 1024 caractères, **aucun `: `**, et `name` en minuscules, chiffres et
+tirets, sans les mots réservés `anthropic` et `claude`.
+
+### 11.4 Procédure côté admin client
+
+⚠️ **Statut de vérification.** **[V]** = vérifié sur ce prototype. **[D]** = vérifié en
+documentation au §9, mais non éprouvé en pratique. **[NV]** = ni l'un ni l'autre. Notre chemin
+d'apprentissage passait par un dépôt **public** en scope **personnel** : tout ce qui touche au
+provisioning d'organisation reste à éprouver avec l'Owner du client, **avant** de s'engager sur un
+délai.
+
+1. **[D] Le dépôt du marketplace doit être privé ou interne.** Le sync org **refuse un dépôt
+   public** (§9). Deux voies existent sur Team, et il faut trancher tôt car elles n'ont pas le même
+   coût d'exploitation :
+   - **Sync GitHub** via la Claude GitHub App — à faire installer par un administrateur du GitHub
+     du client, sur le seul dépôt du marketplace. Mises à jour par push.
+   - **Upload ZIP** (≤ 50 Mo, 100 plugins) — aucune dépendance à GitHub ni à ses permissions, mais
+     chaque mise à jour est un ré-upload manuel. Voie de repli crédible si l'accès au GitHub du
+     client s'avère long à obtenir.
+2. **[V] Ajouter le marketplace depuis le dépôt git**, jamais en pointant l'URL du fichier
+   `marketplace.json` : les `source` relatives ne se résolvent pas dans ce cas, seul ce fichier
+   étant téléchargé (§3.5).
+3. **[D] Provisionner via `Organization settings > Plugins`**, réservé aux **Owner / Primary
+   Owner** — sur Team comme sur Enterprise (§9).
+4. **[D] Le pilote passe par le mode *available for install*.** L'accès par groupe est absent sur
+   Team : un plugin est **tout-ou-rien pour l'organisation entière** (§9). Séquence : publication en
+   opt-in, recrutement manuel des testeurs, puis bascule en *installed by default* une fois validé.
+   Il n'existe aucun substitut technique au rollout progressif.
+5. **[V] Prévoir la procédure de mise à jour** dans la documentation remise au client : un push ne
+   propage rien, l'installation est épinglée (§8.6). **[NV]** Sur un plugin *required*, savoir si la
+   mise à jour est poussée automatiquement ou si chaque utilisateur doit agir — question à poser tôt,
+   elle change la charge d'exploitation.
+6. **[V] Valider en local avant tout provisioning** : `claude plugin validate .`, installation
+   depuis un répertoire local, puis test sur la surface réelle. Le validateur ne détecte ni les
+   chemins erronés, ni les YAML invalides, ni les noms d'outils inexistants.
+7. **[D] Prévoir une revue de sécurité manuelle.** Le scanning automatique des skills et plugins est
+   une fonction Enterprise, donc absente ici (§9). Si l'équipe sécurité du client la demande, elle
+   sera manuelle et à formaliser — c'est un poste de charge à annoncer, pas une surprise de fin de
+   projet.
+
+### 11.5 Permissions et prérequis à obtenir avant le démarrage
+
+À obtenir **avant** la première ligne de code, faute de quoi le travail est livrable mais non
+testable :
+
+- **Un Owner ou Primary Owner identifié nommément.** C'est le prérequis le plus dur, et le plus
+  souvent sous-estimé : sur Team, les **rôles custom n'existent pas** (§9), donc **aucune délégation
+  n'est possible**. Sans cette personne, aucune installation org-wide, quel que soit le code livré.
+- **Skills activées** au niveau de l'organisation — prérequis du provisioning (§3.8).
+- **Cowork activé** — prérequis du provisioning, et **seule** surface où un sub-agent existe. Point
+  favorable : les sessions cloud Cowork sont **activées par défaut sur Team** (§9), donc à confirmer
+  plutôt qu'à demander. Attention, c'est tout-ou-rien : pas d'activation sélective.
+- **Accès en lecture au dépôt privé** accordé à Claude, ou décision d'emprunter la voie ZIP
+  (cf. §11.4.1).
+- **Exécution de code et création de fichiers**, si et seulement si le plugin embarque un script.
+- **Capability Claude Code**, pour valider en local avant provisioning.
+- **Des testeurs volontaires**, recrutés à la main : faute d'accès par groupe, c'est le seul moyen
+  de piloter (cf. §11.4.4).
+
+### 11.6 Ce qui reste non vérifié
+
+À reprendre chez le client, ou sur ce prototype si l'occasion se présente :
+
+1. **Une liste `tools` déclarée est-elle honorée, ou seulement acceptée ?** Test : relancer
+   `menu-critic` en 0.3.1 et redemander son inventaire. S'il revient à 16 outils, la déclaration est
+   décorative, et il ne faut alors **pas** promettre de moindre privilège au client.
+   **C'est la question la plus rentable de cette liste** : le client étant sur Team, il n'a aucun
+   scanning automatique de sécurité (§9). Le `tools` déclaré serait donc le seul élément concret à
+   présenter à son équipe sécurité — autant savoir s'il vaut quelque chose.
+2. **Un hook s'exécute-t-il en Cowork ?** Non observé, les trois causes possibles n'ayant pas été
+   départagées avant retrait du hook (§8.2).
+3. **Le chemin admin du §10.4**, points [NV].
+4. **Le comportement d'un PDF image-only** en contexte : qualité de la lecture, coût en tokens
+   (§8.4). Le prototype dispose de la fixture nécessaire.
