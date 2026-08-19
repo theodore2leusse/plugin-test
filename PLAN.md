@@ -94,7 +94,10 @@ Ces points ont été vérifiés dans la documentation officielle pendant la sess
 - **Aucun outil de lecture PDF en local** (`poppler`, `pypdf`, `pdfplumber`, `PIL` : absents).
   → Un agent de code **ne peut pas** auto-évaluer la qualité d'un résumé. Cette vérification est
   **manuelle**, via la grille du §7. Ne pas installer `poppler` : inutile au projet.
-- `cupsfilter` (natif macOS) permet de produire un PDF depuis du HTML sans rien installer.
+- `cupsfilter` (natif macOS) : **la voie HTML est fausse** — vérifiée le 2026-08-19,
+  `cupsfilter: No filter to convert from text/html to application/pdf`. Les filtres présents
+  ne couvrent que `text/plain`, `image/*` et `application/pdf` (`cgtexttopdf`, `cgimagetopdf`).
+  Seul chemin natif retenu : `cupsfilter -i text/plain fichier.txt > fichier.pdf`.
 
 ### Fixture disponible
 
@@ -363,9 +366,9 @@ Rôle : proposer un accord en 3 services à partir de la carte, avec une fourche
 - Ajouter à ce PLAN.md une section **« Transposition client »** consignant :
   - ce qui a marché du premier coup et ce qui a résisté ;
   - la formulation de `description` qui déclenche le plus fiablement ;
-  - la procédure exacte côté admin client (repo **privé** + **Claude GitHub App** + mode de
-    diffusion *required* ou *installed by default*, cf. §3.8) — ce chemin diffère du nôtre, qui
-    passe par un repo public en scope personnel ;
+  - la procédure exacte côté admin client (repo **privé ou interne** + **Claude GitHub App** +
+    mode de diffusion, cf. §3.8 et §9) — ce chemin diffère du nôtre, qui passe par un repo public
+    en scope personnel ;
   - la liste des permissions à demander à l'admin du client **avant** le démarrage.
 
 ---
@@ -433,12 +436,61 @@ signalée dans sa section, pas supprimée).
 
 1. Le **rôle custom** de l'utilisateur autorise-t-il l'ajout d'un marketplace ? → phase 0.
 2. **Cowork** supporte-t-il l'événement `SessionStart` d'un hook de plugin ? → phase 2.
-3. Format exact du **frontmatter d'un sub-agent** consommé par Cowork.
+3. ~~Format exact du **frontmatter d'un sub-agent**~~ → **levé le 2026-08-19** pour Claude Code :
+   `name` et `description` obligatoires, `model` / `color` / `tools` optionnels ; deux syntaxes de
+   `tools` acceptées (`tools: Read, Grep` et `tools: ["Read", "Grep"]`) ; omettre `tools` = accès
+   complet (`plugin-dev/agents/agent-creator.md:110`). Sur 34 agents du marketplace officiel, 22
+   déclarent `tools` — mais **tous** avec des noms d'outils Claude Code, et « Cowork » n'apparaît
+   que dans un seul fichier de tout ce marketplace. Décision prise en conséquence : `menu-critic`
+   **ne déclare pas `tools`** et est **conçu sans besoin d'outil** (il travaille sur le résumé et la
+   carte que l'appelant lui passe dans le prompt). Reste à observer en Cowork : l'inventaire réel
+   d'outils offert à un sub-agent, pour pouvoir déclarer une liste juste côté client.
 4. Comportement d'un PDF **image-only de 4 pages** en chat : qualité de l'OCR, coût en contexte.
 5. **Fiabilité du déclenchement automatique** de la skill sur simple dépôt de PDF, sans `/`.
 6. Le versioning : un push suffit-il à propager la mise à jour, ou faut-il réinstaller le plugin ?
 
-## 9. Anti-objectifs
+---
+
+## 9. Le client est sur Claude **Team**, pas Enterprise
+
+Vérifié en documentation. **Aucun impact sur le plugin lui-même** : format, arborescence,
+manifestes et skills sont identiques. L'écart porte uniquement sur la **gouvernance du
+déploiement**.
+
+**Disponible sur Team exactement comme sur Enterprise :**
+
+- Gestion org-wide des plugins via `Organization settings > Plugins`, réservée aux rôles
+  **Owner / Primary Owner** (la doc dit « Team **and** Enterprise »).
+- Les deux voies de marketplace custom : **upload ZIP** (≤ 50 Mo, 100 plugins) **et sync GitHub**
+  via la Claude GitHub App. Le sync n'est pas réservé à Enterprise.
+- Les quatre modes de diffusion : *installed by default*, *available for install*, *not available*,
+  *required*.
+- Le provisioning de skills org-wide, et **Cowork**. Nuance favorable : les sessions cloud Cowork
+  sont **activées par défaut** sur Team (désactivées par défaut sur Enterprise).
+
+**Absent sur Team :**
+
+| Fonction | Conséquence |
+|---|---|
+| **Accès par groupe** aux plugins (Enterprise only) | Un plugin est **tout-ou-rien pour l'org entière**. Pas de pilote sur un sous-ensemble d'utilisateurs. |
+| **Rôles custom** | Aucune délégation fine : seul un Owner / Primary Owner peut gérer les plugins. |
+| **Activation sélective de Cowork** | Tout-ou-rien également. |
+| **Scanning de sécurité des skills et plugins** | Présenté comme une fonction Enterprise — à considérer comme absent. |
+
+**Conséquences pour la mission :**
+
+1. **Le pilote passe par le mode *available for install***, pas par les groupes : publication en
+   opt-in, recrutement manuel des testeurs, puis bascule en *installed by default* après
+   validation. C'est le seul substitut au rollout progressif.
+2. **⚠️ Le repo du marketplace doit être privé ou interne** chez le client : le sync org **refuse
+   un repo public**. Notre chemin d'apprentissage (repo public + scope personnel) diverge donc ici.
+   À éprouver avant la livraison, pas le jour J.
+3. **Pas de scanning automatique** → la revue de sécurité du plugin devra être manuelle et
+   formalisée si l'équipe sécurité du client la demande.
+4. Identifier **nommément l'Owner** du Claude Team du client dès le cadrage : sans lui, aucune
+   installation org-wide n'est possible, et il n'existe aucun rôle intermédiaire à qui déléguer.
+
+## 10. Anti-objectifs
 
 - Aucune `command/` (non consommée en chat ni en Cowork).
 - Aucun serveur MCP, aucun connecteur.

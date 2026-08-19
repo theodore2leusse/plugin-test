@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'menu-digest actif — deposez un menu PDF pour obtenir un resume en 5 sections.'"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -11,7 +11,7 @@
       "source": "./plugins/menu-digest",
       "displayName": "Menu Digest",
       "description": "Résume la carte d'un restaurant fournie en PDF selon un format éditorial fixe en 5 sections",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "category": "productivity",
       "keywords": ["menu", "restaurant", "pdf", "resume"],
       "author": { "name": "Théodore de Leusse" },
