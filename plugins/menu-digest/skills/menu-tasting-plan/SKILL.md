@@ -31,11 +31,23 @@ parmi les plats réellement présents sur la carte.
 
 ## Budget — appel du script
 
-Passe les trois services retenus sur l'entrée standard, en JSON :
+Passe les trois services retenus sur l'entrée standard, en JSON. Le répertoire courant du
+shell **n'est pas** celui de cette skill : référence toujours le script par
+`${CLAUDE_PLUGIN_ROOT}`, jamais par un chemin relatif.
 
 ```bash
-echo '{"courses":[{"name":"Poireaux vinaigrette","price":12},{"name":"Quasi de veau","price":26},{"name":"Paris-brest","price":9}]}' | python3 scripts/price_range.py
+echo '{"courses":[{"name":"Poireaux vinaigrette","price":12},{"name":"Quasi de veau","price":26},{"name":"Paris-brest","price":9}]}' \
+  | python3 "${CLAUDE_PLUGIN_ROOT}/skills/menu-tasting-plan/scripts/price_range.py"
 ```
+
+Si `${CLAUDE_PLUGIN_ROOT}` n'est pas défini dans l'environnement, localise le script à partir du
+répertoire d'installation du plugin :
+
+```bash
+find "$HOME" /sessions -path '*/skills/menu-tasting-plan/scripts/price_range.py' 2>/dev/null | head -1
+```
+
+N'explore **jamais** la racine du système (`find / ...`) : c'est long et inutile.
 
 Le script renvoie le total, le prix minimum, maximum et médian des services, et le budget par
 personne. Ajoute `"guests": 4` au JSON pour obtenir en plus le budget du groupe. Omets la clé

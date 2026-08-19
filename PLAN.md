@@ -68,6 +68,18 @@ Ces points ont été vérifiés dans la documentation officielle pendant la sess
    niveau 2 = corps du SKILL.md (au déclenchement, viser < 5k tokens) ; niveau 3 = fichiers de
    référence et scripts (lus/exécutés à la demande — le code d'un script n'entre **jamais** en
    contexte, seule sa sortie compte).
+13. **Chemins depuis une skill — vérifié le 2026-08-19 sur la surface distante.** Deux régimes
+    différents, à ne pas confondre :
+    - la **lecture** d'un fichier de référence en chemin relatif fonctionne
+      (`references/pairing-rules.md` a été lu sans difficulté) ;
+    - dans un **shell**, le répertoire courant n'est **pas** celui de la skill : un
+      `python3 scripts/price_range.py` échoue. Symptôme observé sans correctif : l'agent se
+      rabat sur un `find / -iname ...` sur tout le système de fichiers.
+    → Référencer tout script par `${CLAUDE_PLUGIN_ROOT}` (38 usages dans le marketplace
+    officiel, y compris dans des `hooks.json`), entre guillemets. Racine d'installation observée
+    sur la surface distante : `/sessions/<session>/mnt/.remote-plugins/plugin_<id>/`, avec un id
+    opaque et généré — donc jamais codable en dur.
+
 8. **Provisioning org-wide** : réservé aux rôles Owner / Primary Owner via
    `Organization settings > Plugins` (Team/Enterprise). Modes de diffusion par plugin :
    *installed by default*, *available for install*, *not available*, *required* ; override par
@@ -435,7 +447,14 @@ signalée dans sa section, pas supprimée).
 À lever par l'observation lors de l'exécution, sans y consacrer d'effort de recherche préalable :
 
 1. Le **rôle custom** de l'utilisateur autorise-t-il l'ajout d'un marketplace ? → phase 0.
-2. **Cowork** supporte-t-il l'événement `SessionStart` d'un hook de plugin ? → phase 2.
+2. **Cowork** supporte-t-il l'événement `SessionStart` d'un hook de plugin ? → **toujours ouvert,
+   mais le protocole de test a changé.** Un simple `echo` est **inobservable** : sa sortie part
+   vers le harness (`claude plugin details` la classe « harness-only — no model context cost »)
+   et n'apparaît ni dans le fil de conversation, ni dans la liste des commandes exécutées. Le hook
+   écrit donc désormais une ligne horodatée dans `/tmp/menu-digest-hook.log`. Test déterministe :
+   ouvrir une **nouvelle** session, puis demander la lecture de ce fichier. Une ligne
+   `menu-digest SessionStart <horodatage>` par démarrage prouve l'exécution ; fichier absent =
+   hook non exécuté sur cette surface.
 3. ~~Format exact du **frontmatter d'un sub-agent**~~ → **levé le 2026-08-19** pour Claude Code :
    `name` et `description` obligatoires, `model` / `color` / `tools` optionnels ; deux syntaxes de
    `tools` acceptées (`tools: Read, Grep` et `tools: ["Read", "Grep"]`) ; omettre `tools` = accès
