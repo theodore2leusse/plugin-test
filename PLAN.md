@@ -447,7 +447,21 @@ signalée dans sa section, pas supprimée).
    d'outils offert à un sub-agent, pour pouvoir déclarer une liste juste côté client.
 4. Comportement d'un PDF **image-only de 4 pages** en chat : qualité de l'OCR, coût en contexte.
 5. **Fiabilité du déclenchement automatique** de la skill sur simple dépôt de PDF, sans `/`.
-6. Le versioning : un push suffit-il à propager la mise à jour, ou faut-il réinstaller le plugin ?
+6. ~~Le versioning : un push suffit-il à propager la mise à jour ?~~ → **levé le 2026-08-19 : NON.**
+   Une installation reste **épinglée à la version du moment de l'install**. Constaté sur les deux
+   surfaces : claude.ai servait encore la 0.1.0 après le push de la 0.2.0, et en local
+   `claude plugin update` a rapporté « updated from 0.1.0 to 0.2.1 » alors que la source était
+   déjà en 0.2.1 depuis plusieurs commits. Mécanique en **deux temps**, dans cet ordre :
+   `claude plugin marketplace update <marketplace>` (rafraîchit le catalogue depuis la source),
+   puis `claude plugin update <plugin>@<marketplace>` (met à jour l'installation), puis
+   **redémarrage** (« Restart to apply changes »).
+   ⚠️ Deux pièges de premier ordre pour la transposition client :
+   - `claude plugin update menu-digest` sans le suffixe `@marketplace` échoue sur
+     « Plugin "menu-digest" not found » — message trompeur, le plugin est bien installé.
+   - **`claude plugin details` affiche l'inventaire de la SOURCE, pas de la version installée.**
+     Il annonçait 2 skills / 1 agent / 1 hook et la bonne version pendant que l'installation
+     servait encore la 0.1.0. Ce n'est donc **pas** une preuve que l'installation sert ce contenu ;
+     seule la surface consommatrice l'est.
 
 ---
 
