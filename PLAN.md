@@ -343,6 +343,10 @@ Rôle : proposer un accord en 3 services à partir de la carte, avec une fourche
 
 ### 2.3 Hook : `hooks/hooks.json` — contenu littéral
 
+> ⚠️ **RETIRÉ du plugin le 2026-08-19**, sur décision de l'utilisateur, après que le hook a
+> rempli son office de sonde (cf. §8.2). La spécification ci-dessous est conservée à titre
+> d'archive : elle reste le point de départ si un hook devient nécessaire chez le client.
+
 ```json
 {
   "hooks": {
@@ -463,14 +467,23 @@ signalée dans sa section, pas supprimée).
 À lever par l'observation lors de l'exécution, sans y consacrer d'effort de recherche préalable :
 
 1. Le **rôle custom** de l'utilisateur autorise-t-il l'ajout d'un marketplace ? → phase 0.
-2. **Cowork** supporte-t-il l'événement `SessionStart` d'un hook de plugin ? → **toujours ouvert,
-   mais le protocole de test a changé.** Un simple `echo` est **inobservable** : sa sortie part
-   vers le harness (`claude plugin details` la classe « harness-only — no model context cost »)
-   et n'apparaît ni dans le fil de conversation, ni dans la liste des commandes exécutées. Le hook
-   écrit donc désormais une ligne horodatée dans `/tmp/menu-digest-hook.log`. Test déterministe :
-   ouvrir une **nouvelle** session, puis demander la lecture de ce fichier. Une ligne
-   `menu-digest SessionStart <horodatage>` par démarrage prouve l'exécution ; fichier absent =
-   hook non exécuté sur cette surface.
+2. **Cowork** supporte-t-il l'événement `SessionStart` d'un hook de plugin ? → **clos sans
+   réponse pour Cowork, le 2026-08-19, sur décision utilisateur : le hook a été retiré.**
+   Ce qui reste acquis :
+   - **En Claude Code, `SessionStart` s'exécute réellement.** Preuve : trois lignes horodatées
+     (`16:28:46Z`, `16:32:50Z`, `16:36:05Z`) écrites dans `/tmp/menu-digest-hook.log` à trois
+     démarrages de session, alors qu'une seule ligne (`16:15:02Z`) provenait d'un test manuel.
+   - **La sortie d'un hook n'est pas observable depuis la conversation** : `claude plugin details`
+     la classe « harness-only — no model context cost ». Un `echo` ne se voit ni dans le fil, ni
+     dans la liste des commandes exécutées. Tout hook dont on veut prouver l'exécution doit donc
+     produire un **effet de bord dans le système de fichiers**, pas écrire sur stdout.
+   - **Un hook coûte zéro token** de contexte, contrairement à une skill (~150 tok always-on).
+   - **En Cowork : non observé.** `/tmp/menu-digest-hook.log` était absent de la session
+     `practical-funny-euler`, mais sans avoir départagé les trois causes possibles (version
+     épinglée trop ancienne, hook non exécuté, `/tmp` non inscriptible). **À reprendre côté
+     client** si un hook y est envisagé : c'est la seule mécanique qui puisse *garantir* un
+     comportement, une skill n'étant qu'une proposition au modèle.
+
 3. ~~Format exact du **frontmatter d'un sub-agent**~~ → **levé le 2026-08-19** pour Claude Code :
    `name` et `description` obligatoires, `model` / `color` / `tools` optionnels ; deux syntaxes de
    `tools` acceptées (`tools: Read, Grep` et `tools: ["Read", "Grep"]`) ; omettre `tools` = accès

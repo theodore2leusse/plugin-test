@@ -1,7 +1,7 @@
 {
   "name": "menu-digest",
   "displayName": "Menu Digest",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Résume la carte d'un restaurant fournie en PDF selon un format éditorial fixe en 5 sections",
   "author": { "name": "Théodore de Leusse" },
   "repository": "https://github.com/theodore2leusse/plugin-test",
