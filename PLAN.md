@@ -75,10 +75,26 @@ Ces points ont été vérifiés dans la documentation officielle pendant la sess
     - dans un **shell**, le répertoire courant n'est **pas** celui de la skill : un
       `python3 scripts/price_range.py` échoue. Symptôme observé sans correctif : l'agent se
       rabat sur un `find / -iname ...` sur tout le système de fichiers.
-    → Référencer tout script par `${CLAUDE_PLUGIN_ROOT}` (38 usages dans le marketplace
-    officiel, y compris dans des `hooks.json`), entre guillemets. Racine d'installation observée
-    sur la surface distante : `/sessions/<session>/mnt/.remote-plugins/plugin_<id>/`, avec un id
-    opaque et généré — donc jamais codable en dur.
+    Racine d'installation observée sur la surface distante :
+    `/sessions/<session>/mnt/.remote-plugins/plugin_<id>/`, avec un id opaque et généré — donc
+    jamais codable en dur.
+
+14. **⚠️ `${CLAUDE_PLUGIN_ROOT}` n'est PAS disponible dans un shell lancé depuis une skill sur
+    chat/Cowork — vérifié le 2026-08-19.** `echo "[${CLAUDE_PLUGIN_ROOT}]"` y renvoie `[]`.
+    Ce n'est pas une anomalie mais un **périmètre** : la documentation officielle
+    (`plugin-dev/skills/command-development/references/plugin-features-reference.md`) la définit
+    comme « available in plugin **commands** », et ses 38 occurrences dans le marketplace officiel
+    sont toutes dans des `commands/` ou des `hooks.json` — jamais dans le shell d'une skill.
+    Or le §3.2 a établi que les commands ne sont pas consommées en chat/Cowork, d'où notre
+    anti-objectif de n'en créer aucune. Les deux faits se combinent en une conséquence lourde :
+    **un script embarqué dans une skill n'a aucun moyen documenté de connaître son propre chemin
+    sur les surfaces chat/Cowork.** Deux options seulement :
+    - découverte par `find` ciblé sur `"$HOME"` et `/sessions` avec un motif `-path` complet,
+      en une commande unique qui essaie d'abord la variable (solution retenue en 0.2.3) ;
+    - renoncer aux scripts et garder la skill en markdown pur.
+    → **À arbitrer explicitement avec le client** avant de promettre un script dans une skill :
+    la voie `find` fonctionne mais coûte un aller-retour et repose sur une arborescence non
+    contractuelle, susceptible de changer sans préavis.
 
 8. **Provisioning org-wide** : réservé aux rôles Owner / Primary Owner via
    `Organization settings > Plugins` (Team/Enterprise). Modes de diffusion par plugin :
